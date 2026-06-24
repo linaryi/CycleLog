@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             Int             @id @default(autoincrement())
+  email          String          @unique
+  createdAt      DateTime        @default(now())
+
+  cycles         Cycle[]
+  symptomLogs    SymptomLog[]
+  medicationLogs MedicationLog[]
+}
+
+model Cycle {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  startDate DateTime
+  endDate   DateTime?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model SymptomLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  date      DateTime
+  cramps    Int?
+  fatigue   Int?
+  mood      String?
+  headache  Boolean?
+  bloating  Boolean?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model MedicationLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  name      String
+  doseMg    Int?
+  takenAt   DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
