@@ -16,7 +16,7 @@ function LogEntry() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       userId: 1,
-      date: new Date().toISOString(),
+      date: new Date().toLocaleDateString('en-CA'),
       cramps,
       fatigue,
       mood,
