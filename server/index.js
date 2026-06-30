@@ -33,12 +33,22 @@ app.get('/api/cycles', async (req, res) => {
 })
 
 app.post('/api/cycles', async (req, res) => {
-  const { userId, startDate } = req.body
+  const { userId, startDate, endDate } = req.body
   const cycle = await prisma.cycle.create({
     data: {
       userId,
       startDate: new Date(startDate),
+      endDate: endDate ? new Date(endDate) : null,
     }
+  })
+  res.json(cycle)
+})
+
+app.put('/api/cycles/:id', async (req, res) => {
+  const { endDate } = req.body
+  const cycle = await prisma.cycle.update({
+    where: { id: Number(req.params.id) },
+    data: { endDate: new Date(endDate) },
   })
   res.json(cycle)
 })
@@ -49,18 +59,24 @@ app.get('/api/symptoms', async (req, res) => {
 })
 
 app.post('/api/symptoms', async (req, res) => {
-  const { userId, date, cramps, fatigue, mood, headache, bloating, notes } = req.body
-  const symptom = await prisma.symptomLog.create({
-    data: {
-      userId,
-      date: new Date(date),
-      cramps,
-      fatigue,
-      mood,
-      headache,
-      bloating,
-      notes,
-    }
+  const { userId, date, cramps, fatigue, flow, mood, headache, headacheSide, headacheSeverity, bloating, notes } = req.body
+  const data = {
+    userId,
+    date: new Date(date),
+    cramps,
+    fatigue,
+    flow,
+    mood,
+    headache,
+    headacheSide,
+    headacheSeverity,
+    bloating,
+    notes,
+  }
+  const symptom = await prisma.symptomLog.upsert({
+    where: { userId_date: { userId, date: new Date(date) } },
+    update: data,
+    create: data,
   })
   res.json(symptom)
 })

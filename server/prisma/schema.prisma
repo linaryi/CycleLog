@@ -33,18 +33,23 @@ model Cycle {
 }
 
 model SymptomLog {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  date      DateTime
-  cramps    Int?
-  fatigue   Int?
-  mood      String?
-  headache  Boolean?
-  bloating  Boolean?
-  notes     String?
-  createdAt DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  date             DateTime
+  cramps           Int?
+  fatigue          Int?
+  flow             String?
+  mood             String?
+  headache         Boolean?
+  headacheSide     String?
+  headacheSeverity Int?
+  bloating         Boolean?
+  notes            String?
+  createdAt        DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
 }
 
 model MedicationLog {
