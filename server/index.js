@@ -65,6 +65,25 @@ app.post('/api/symptoms', async (req, res) => {
   res.json(symptom)
 })
 
+app.get('/api/medications', async (req, res) => {
+  const medications = await prisma.medicationLog.findMany()
+  res.json(medications)
+})
+
+app.post('/api/medications', async (req, res) => {
+  const { userId, name, doseMg, takenAt, notes } = req.body
+  const medication = await prisma.medicationLog.create({
+    data: {
+      userId,
+      name,
+      doseMg,
+      takenAt: new Date(takenAt),
+      notes,
+    }
+  })
+  res.json(medication)
+})
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
