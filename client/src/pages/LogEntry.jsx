@@ -11,8 +11,7 @@ function LogEntry() {
   const [symptomDate, setSymptomDate] = useState(new Date().toLocaleDateString('en-CA'))
   const [symptoms, setSymptoms] = useState([])
   const [flow, setFlow] = useState('')
-  const [moodTier, setMoodTier] = useState(null)
-  const [moodSpecific, setMoodSpecific] = useState(null)
+  const [moods, setMoods] = useState([])
   const [notes, setNotes] = useState('')
   const [entries, setEntries] = useState([])
 
@@ -33,8 +32,7 @@ function LogEntry() {
       s => new Date(s.date).toLocaleDateString('en-CA', { timeZone: 'UTC' }) === symptomDate
     )
     setFlow(existing?.flow ?? '')
-    setMoodTier(existing?.moodTier ?? null)
-    setMoodSpecific(existing?.moodSpecific ?? null)
+    setMoods(existing?.moods ?? [])
     setNotes(existing?.notes ?? '')
     setEntries(existing?.entries?.map(e => ({ key: e.key, severity: e.severity, details: e.details || {} })) ?? [])
   }, [symptomDate, symptoms])
@@ -73,8 +71,7 @@ function LogEntry() {
         userId: 1,
         date: symptomDate,
         flow,
-        moodTier,
-        moodSpecific,
+        moods,
         notes,
         entries,
       })
@@ -163,7 +160,7 @@ function LogEntry() {
 
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Mood</h3>
           <div className="mb-4">
-            <MoodPicker value={{ tier: moodTier, specific: moodSpecific }} onChange={(v) => { setMoodTier(v.tier); setMoodSpecific(v.specific) }} />
+            <MoodPicker value={moods} onChange={setMoods} />
           </div>
 
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Symptoms</h3>

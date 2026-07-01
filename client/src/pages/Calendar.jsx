@@ -23,14 +23,12 @@ function Calendar() {
 
   const loggedDates = symptoms.map(entry => dateKey(new Date(entry.date), true))
 
-  const moodByDate = Object.fromEntries(
+  const moodColorsByDate = Object.fromEntries(
     symptoms
-      .filter(entry => entry.moodTier)
+      .filter(entry => entry.moods?.length)
       .map(entry => [
         dateKey(new Date(entry.date), true),
-        entry.moodSpecific
-          ? moodEmotionByName[entry.moodSpecific]?.color ?? NEUTRAL_MOOD_COLOR
-          : NEUTRAL_MOOD_COLOR,
+        entry.moods.map(name => moodEmotionByName[name]?.color ?? NEUTRAL_MOOD_COLOR),
       ])
   )
 
@@ -43,11 +41,13 @@ function Calendar() {
 
   function tileContent({ date }) {
     if (view !== 'mood') return null
-    const color = moodByDate[dateKey(date)]
-    if (!color) return null
+    const colors = moodColorsByDate[dateKey(date)]
+    if (!colors?.length) return null
     return (
-      <div className="flex justify-center mt-1">
-        <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: color }} />
+      <div className="flex justify-center gap-0.5 mt-1">
+        {colors.map((color, i) => (
+          <span key={i} className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: color }} />
+        ))}
       </div>
     )
   }

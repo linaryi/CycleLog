@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import SymptomChecklist from '../components/SymptomChecklist'
 import MoodPicker from '../components/MoodPicker'
 import { symptomByKey } from '../symptomCatalog'
-import { moodTierByKey } from '../moodCatalog'
 
 function toDateKey(date) {
   return date.toLocaleDateString('en-CA')
@@ -15,8 +14,7 @@ function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()))
 
   const [flow, setFlow] = useState('')
-  const [moodTier, setMoodTier] = useState(null)
-  const [moodSpecific, setMoodSpecific] = useState(null)
+  const [moods, setMoods] = useState([])
   const [notes, setNotes] = useState('')
   const [entries, setEntries] = useState([])
   const [isQuickLogOpen, setIsQuickLogOpen] = useState(false)
@@ -40,7 +38,7 @@ function Dashboard() {
 
   const lastSymptom = symptoms.sort((a, b) => new Date(b.date) - new Date(a.date))[0]
   const lastSymptomLabels = lastSymptom?.entries?.map(e => symptomByKey[e.key]?.label ?? e.key) ?? []
-  const lastMoodLabel = lastSymptom?.moodSpecific ?? (lastSymptom?.moodTier ? moodTierByKey[lastSymptom.moodTier]?.label : null) ?? '—'
+  const lastMoodLabel = lastSymptom?.moods?.length ? lastSymptom.moods.join(', ') : '—'
 
   const today = new Date()
   const days = [-2, -1, 0, 1, 2].map(offset => {
@@ -58,8 +56,7 @@ function Dashboard() {
   useEffect(() => {
     const existing = symptomFor(selectedDate)
     setFlow(existing?.flow ?? '')
-    setMoodTier(existing?.moodTier ?? null)
-    setMoodSpecific(existing?.moodSpecific ?? null)
+    setMoods(existing?.moods ?? [])
     setNotes(existing?.notes ?? '')
     setEntries(existing?.entries?.map(e => ({ key: e.key, severity: e.severity, details: e.details || {} })) ?? [])
   }, [selectedDate, symptoms])
@@ -72,8 +69,7 @@ function Dashboard() {
         userId: 1,
         date: selectedDate,
         flow,
-        moodTier,
-        moodSpecific,
+        moods,
         notes,
         entries,
       })
@@ -183,7 +179,7 @@ function Dashboard() {
 
               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Mood</h4>
               <div className="mb-4">
-                <MoodPicker value={{ tier: moodTier, specific: moodSpecific }} onChange={(v) => { setMoodTier(v.tier); setMoodSpecific(v.specific) }} />
+                <MoodPicker value={moods} onChange={setMoods} />
               </div>
 
               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Symptoms</h4>

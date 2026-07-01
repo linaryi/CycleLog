@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { symptomByKey } from '../symptomCatalog'
-import { moodTierByKey, moodEmotionByName } from '../moodCatalog'
+import { moodEmotionByName } from '../moodCatalog'
 
 function History() {
   const [symptoms, setSymptoms] = useState([])
@@ -25,8 +25,7 @@ function History() {
         )}
 
         {sorted.map(entry => {
-          const moodLabel = entry.moodSpecific || (entry.moodTier ? moodTierByKey[entry.moodTier]?.label : null)
-          const moodColor = entry.moodSpecific ? moodEmotionByName[entry.moodSpecific]?.color : null
+          const moods = entry.moods ?? []
           return (
             <div key={entry.id} className="bg-white rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-2">
@@ -38,10 +37,14 @@ function History() {
                 )}
               </div>
 
-              {moodLabel && (
-                <div className="flex items-center gap-1.5 mb-2">
-                  {moodColor && <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: moodColor }} />}
-                  <span className="text-sm text-gray-600">Mood: {moodLabel}</span>
+              {moods.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {moods.map(name => (
+                    <span key={name} className="flex items-center gap-1.5 text-xs bg-[#F4E1EB] text-[#13293E] px-2.5 py-1 rounded-full">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: moodEmotionByName[name]?.color ?? '#B8B8B8' }} />
+                      {name}
+                    </span>
+                  ))}
                 </div>
               )}
 
