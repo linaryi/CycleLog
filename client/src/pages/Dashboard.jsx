@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import SymptomChecklist from '../components/SymptomChecklist'
+import MoodPicker from '../components/MoodPicker'
 import { symptomByKey } from '../symptomCatalog'
+import { moodTierByKey } from '../moodCatalog'
 
 function toDateKey(date) {
   return date.toLocaleDateString('en-CA')
@@ -13,7 +15,8 @@ function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(toDateKey(new Date()))
 
   const [flow, setFlow] = useState('')
-  const [mood, setMood] = useState('')
+  const [moodTier, setMoodTier] = useState(null)
+  const [moodSpecific, setMoodSpecific] = useState(null)
   const [notes, setNotes] = useState('')
   const [entries, setEntries] = useState([])
   const [isQuickLogOpen, setIsQuickLogOpen] = useState(false)
@@ -37,6 +40,7 @@ function Dashboard() {
 
   const lastSymptom = symptoms.sort((a, b) => new Date(b.date) - new Date(a.date))[0]
   const lastSymptomLabels = lastSymptom?.entries?.map(e => symptomByKey[e.key]?.label ?? e.key) ?? []
+  const lastMoodLabel = lastSymptom?.moodSpecific ?? (lastSymptom?.moodTier ? moodTierByKey[lastSymptom.moodTier]?.label : null) ?? '—'
 
   const today = new Date()
   const days = [-2, -1, 0, 1, 2].map(offset => {
@@ -54,7 +58,8 @@ function Dashboard() {
   useEffect(() => {
     const existing = symptomFor(selectedDate)
     setFlow(existing?.flow ?? '')
-    setMood(existing?.mood ?? '')
+    setMoodTier(existing?.moodTier ?? null)
+    setMoodSpecific(existing?.moodSpecific ?? null)
     setNotes(existing?.notes ?? '')
     setEntries(existing?.entries?.map(e => ({ key: e.key, severity: e.severity, details: e.details || {} })) ?? [])
   }, [selectedDate, symptoms])
@@ -67,7 +72,8 @@ function Dashboard() {
         userId: 1,
         date: selectedDate,
         flow,
-        mood,
+        moodTier,
+        moodSpecific,
         notes,
         entries,
       })
@@ -99,7 +105,7 @@ function Dashboard() {
                 <div>
                   <p className="text-[#13293E] font-medium">{new Date(lastSymptom.date).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
                   <p className="text-gray-500 text-sm mt-1">
-                    {lastSymptomLabels.length ? lastSymptomLabels.join(' · ') : 'No symptoms'} · Mood: {lastSymptom.mood || '—'}
+                    {lastSymptomLabels.length ? lastSymptomLabels.join(' · ') : 'No symptoms'} · Mood: {lastMoodLabel}
                   </p>
                 </div>
               ) : (
@@ -165,20 +171,19 @@ function Dashboard() {
                 Quick Log — {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </h2>
 
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Flow</label>
-                  <select value={flow} onChange={(e) => setFlow(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
-                    <option value="">None</option>
-                    <option value="light">Light</option>
-                    <option value="medium">Medium</option>
-                    <option value="heavy">Heavy</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Mood</label>
-                  <input type="text" value={mood} onChange={(e) => setMood(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-                </div>
+              <div className="mb-4">
+                <label className="block text-xs text-gray-500 mb-1">Flow</label>
+                <select value={flow} onChange={(e) => setFlow(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
+                  <option value="">None</option>
+                  <option value="light">Light</option>
+                  <option value="medium">Medium</option>
+                  <option value="heavy">Heavy</option>
+                </select>
+              </div>
+
+              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Mood</h4>
+              <div className="mb-4">
+                <MoodPicker value={{ tier: moodTier, specific: moodSpecific }} onChange={(v) => { setMoodTier(v.tier); setMoodSpecific(v.specific) }} />
               </div>
 
               <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Symptoms</h4>

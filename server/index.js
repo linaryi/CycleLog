@@ -59,8 +59,8 @@ app.get('/api/symptoms', async (req, res) => {
 })
 
 app.post('/api/symptoms', async (req, res) => {
-  const { userId, date, flow, mood, notes, entries } = req.body
-  const data = { userId, date: new Date(date), flow, mood, notes }
+  const { userId, date, flow, moodTier, moodSpecific, notes, entries } = req.body
+  const data = { userId, date: new Date(date), flow, moodTier, moodSpecific, notes }
 
   const symptom = await prisma.$transaction(async (tx) => {
     const log = await tx.symptomLog.upsert({

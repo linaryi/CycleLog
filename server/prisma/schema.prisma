@@ -33,13 +33,14 @@ model Cycle {
 }
 
 model SymptomLog {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  date      DateTime
-  flow      String?
-  mood      String?
-  notes     String?
-  createdAt DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  date         DateTime
+  flow         String?
+  moodTier     String?
+  moodSpecific String?
+  notes        String?
+  createdAt    DateTime @default(now())
 
   user    User           @relation(fields: [userId], references: [id])
   entries SymptomEntry[]

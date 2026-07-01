@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import SymptomChecklist from '../components/SymptomChecklist'
+import MoodPicker from '../components/MoodPicker'
 
 function LogEntry() {
   const [startDate, setStartDate] = useState('')
@@ -10,7 +11,8 @@ function LogEntry() {
   const [symptomDate, setSymptomDate] = useState(new Date().toLocaleDateString('en-CA'))
   const [symptoms, setSymptoms] = useState([])
   const [flow, setFlow] = useState('')
-  const [mood, setMood] = useState('')
+  const [moodTier, setMoodTier] = useState(null)
+  const [moodSpecific, setMoodSpecific] = useState(null)
   const [notes, setNotes] = useState('')
   const [entries, setEntries] = useState([])
 
@@ -31,13 +33,13 @@ function LogEntry() {
       s => new Date(s.date).toLocaleDateString('en-CA', { timeZone: 'UTC' }) === symptomDate
     )
     setFlow(existing?.flow ?? '')
-    setMood(existing?.mood ?? '')
+    setMoodTier(existing?.moodTier ?? null)
+    setMoodSpecific(existing?.moodSpecific ?? null)
     setNotes(existing?.notes ?? '')
     setEntries(existing?.entries?.map(e => ({ key: e.key, severity: e.severity, details: e.details || {} })) ?? [])
   }, [symptomDate, symptoms])
 
   async function handleEndCycle(id) {
-    console.log('ending cycle', id, 'with date', cycleEndDate)
     const response = await fetch(`http://localhost:3000/api/cycles/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -48,94 +50,138 @@ function LogEntry() {
   }
 
   async function handleCycleSubmit() {
-  const response = await fetch('http://localhost:3000/api/cycles', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      userId: 1,
-      startDate,
-      endDate: endDate ? new Date(endDate).toISOString() : null,
+    const response = await fetch('http://localhost:3000/api/cycles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: 1,
+        startDate,
+        endDate: endDate ? new Date(endDate).toISOString() : null,
+      })
     })
-  })
-  const data = await response.json()
-  console.log('cycle saved:', data)
+    const data = await response.json()
+    setCycles([...cycles, data])
+    setStartDate('')
+    setEndDate('')
   }
 
   async function handleSubmit() {
-  const response = await fetch('http://localhost:3000/api/symptoms', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      userId: 1,
-      date: symptomDate,
-      flow,
-      mood,
-      notes,
-      entries,
+    const response = await fetch('http://localhost:3000/api/symptoms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: 1,
+        date: symptomDate,
+        flow,
+        moodTier,
+        moodSpecific,
+        notes,
+        entries,
+      })
     })
-  })
-  const data = await response.json()
-  console.log('saved:', data)
-  setSymptoms(prev => [...prev.filter(s => s.id !== data.id), data])
+    const data = await response.json()
+    setSymptoms(prev => [...prev.filter(s => s.id !== data.id), data])
   }
 
   return (
-    <div>
-      <h1>Log Entry</h1>
+    <div className="min-h-screen bg-[#F4E1EB] p-8 flex flex-col items-center">
+      <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Log Entry</h1>
 
-      <h2>Cycle</h2>
-      <label>Start date: </label>
-      <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+      <div className="w-full max-w-xl flex flex-col gap-6">
 
-      <label>End date: </label>
-      <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Start / End a Cycle</h2>
 
-      <button onClick={handleCycleSubmit}>Log Cycle</button>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Start date</label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">End date (optional)</label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+          </div>
 
-      <h2>Active Cycles</h2>
-      {cycles.map(cycle => (
-        <div key={cycle.id}>
-          <p>Started: {new Date(cycle.startDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
-          <p>Ended: {cycle.endDate ? new Date(cycle.endDate).toLocaleDateString('en-US', { timeZone: 'UTC' }) : 'ongoing'}</p>
-          {!cycle.endDate && (
-            <>
-              <input
-                type="date"
-                value={selectedCycleId === cycle.id ? cycleEndDate : ''}
-                onChange={(e) => {
-                  setSelectedCycleId(cycle.id)
-                  setCycleEndDate(e.target.value)
-                }}
-              />
-              <button onClick={() => handleEndCycle(cycle.id)}>End Cycle</button>
-            </>
+          <button onClick={handleCycleSubmit} className="w-full bg-[#13293E] text-white py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity">
+            Log Cycle
+          </button>
+
+          {cycles.length > 0 && (
+            <div className="mt-5 flex flex-col gap-3">
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide">Active Cycles</h3>
+              {cycles.map(cycle => (
+                <div key={cycle.id} className="border border-gray-200 rounded-xl px-4 py-3">
+                  <p className="text-[#13293E] text-sm font-medium">
+                    Started {new Date(cycle.startDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    {cycle.endDate ? `Ended ${new Date(cycle.endDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}` : 'Ongoing'}
+                  </p>
+                  {!cycle.endDate && (
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        type="date"
+                        value={selectedCycleId === cycle.id ? cycleEndDate : ''}
+                        onChange={(e) => {
+                          setSelectedCycleId(cycle.id)
+                          setCycleEndDate(e.target.value)
+                        }}
+                        className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+                      />
+                      <button
+                        onClick={() => handleEndCycle(cycle.id)}
+                        className="bg-[#BCB6E2] text-[#13293E] px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                      >
+                        End Cycle
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
-          <hr />
         </div>
-      ))}
-      <h2>Symptoms</h2>
 
-      <label>Date: </label>
-      <input type="date" value={symptomDate} onChange={(e) => setSymptomDate(e.target.value)} />
+        <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Daily Log</h2>
 
-      <label>Flow: </label>
-      <select value={flow} onChange={(e) => setFlow(e.target.value)}>
-        <option value="">None</option>
-        <option value="light">Light</option>
-        <option value="medium">Medium</option>
-        <option value="heavy">Heavy</option>
-      </select>
+          <div className="mb-4">
+            <label className="block text-xs text-gray-500 mb-1">Date</label>
+            <input type="date" value={symptomDate} onChange={(e) => setSymptomDate(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
+          </div>
 
-      <label>Mood: </label>
-      <input type="text" value={mood} onChange={(e) => setMood(e.target.value)} />
+          <div className="mb-4">
+            <label className="block text-xs text-gray-500 mb-1">Flow</label>
+            <select value={flow} onChange={(e) => setFlow(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
+              <option value="">None</option>
+              <option value="light">Light</option>
+              <option value="medium">Medium</option>
+              <option value="heavy">Heavy</option>
+            </select>
+          </div>
 
-      <h3>Symptoms</h3>
-      <SymptomChecklist value={entries} onChange={setEntries} />
+          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Mood</h3>
+          <div className="mb-4">
+            <MoodPicker value={{ tier: moodTier, specific: moodSpecific }} onChange={(v) => { setMoodTier(v.tier); setMoodSpecific(v.specific) }} />
+          </div>
 
-      <label>Notes: </label>
-      <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Symptoms</h3>
+          <div className="mb-4">
+            <SymptomChecklist value={entries} onChange={setEntries} />
+          </div>
 
-      <button onClick={handleSubmit}>Save Entry</button>
+          <div className="mb-4">
+            <label className="block text-xs text-gray-500 mb-1">Notes</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" rows={2} />
+          </div>
+
+          <button onClick={handleSubmit} className="w-full bg-[#13293E] text-white py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity">
+            Save Entry
+          </button>
+        </div>
+
+      </div>
     </div>
   )
 }

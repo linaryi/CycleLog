@@ -1,1 +1,51 @@
 @import "tailwindcss";
+
+.cyclelog-calendar {
+  width: 100%;
+  border: none;
+  font-family: inherit;
+}
+
+.cyclelog-calendar .react-calendar__navigation button {
+  color: #13293E;
+  font-weight: 600;
+}
+
+.cyclelog-calendar .react-calendar__navigation button:enabled:hover,
+.cyclelog-calendar .react-calendar__navigation button:enabled:focus {
+  background-color: #F4E1EB;
+  border-radius: 0.75rem;
+}
+
+.cyclelog-calendar .react-calendar__month-view__weekdays {
+  color: #9CA3AF;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cyclelog-calendar .react-calendar__tile {
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.5rem;
+  color: #13293E;
+}
+
+.cyclelog-calendar .react-calendar__tile:enabled:hover,
+.cyclelog-calendar .react-calendar__tile:enabled:focus {
+  background-color: #F4E1EB;
+}
+
+.cyclelog-calendar .react-calendar__tile--now {
+  background-color: #F4E1EB;
+}
+
+.cyclelog-calendar .react-calendar__tile--active {
+  background-color: #13293E;
+  color: white;
+}
+
+.cyclelog-calendar .logged-day {
+  background-color: #BCB6E2;
+  color: #13293E;
+}
