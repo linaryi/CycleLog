@@ -33,23 +33,30 @@ model Cycle {
 }
 
 model SymptomLog {
-  id               Int      @id @default(autoincrement())
-  userId           Int
-  date             DateTime
-  cramps           Int?
-  fatigue          Int?
-  flow             String?
-  mood             String?
-  headache         Boolean?
-  headacheSide     String?
-  headacheSeverity Int?
-  bloating         Boolean?
-  notes            String?
-  createdAt        DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  date      DateTime
+  flow      String?
+  mood      String?
+  notes     String?
+  createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user    User           @relation(fields: [userId], references: [id])
+  entries SymptomEntry[]
 
   @@unique([userId, date])
+}
+
+model SymptomEntry {
+  id           Int     @id @default(autoincrement())
+  symptomLogId Int
+  key          String
+  severity     String?
+  details      Json?
+
+  symptomLog SymptomLog @relation(fields: [symptomLogId], references: [id], onDelete: Cascade)
+
+  @@unique([symptomLogId, key])
 }
 
 model MedicationLog {

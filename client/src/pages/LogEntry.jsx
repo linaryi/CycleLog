@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import SymptomChecklist from '../components/SymptomChecklist'
 
 function LogEntry() {
   const [startDate, setStartDate] = useState('')
@@ -8,15 +9,10 @@ function LogEntry() {
   const [selectedCycleId, setSelectedCycleId] = useState(null)
   const [symptomDate, setSymptomDate] = useState(new Date().toLocaleDateString('en-CA'))
   const [symptoms, setSymptoms] = useState([])
-  const [cramps, setCramps] = useState(0)
-  const [fatigue, setFatigue] = useState(0)
   const [flow, setFlow] = useState('')
   const [mood, setMood] = useState('')
-  const [headache, setHeadache] = useState(false)
-  const [headacheSide, setHeadacheSide] = useState('')
-  const [headacheSeverity, setHeadacheSeverity] = useState(0)
-  const [bloating, setBloating] = useState(false)
   const [notes, setNotes] = useState('')
+  const [entries, setEntries] = useState([])
 
   useEffect(() => {
   fetch('http://localhost:3000/api/cycles')
@@ -34,15 +30,10 @@ function LogEntry() {
     const existing = symptoms.find(
       s => new Date(s.date).toLocaleDateString('en-CA', { timeZone: 'UTC' }) === symptomDate
     )
-    setCramps(existing?.cramps ?? 0)
-    setFatigue(existing?.fatigue ?? 0)
     setFlow(existing?.flow ?? '')
     setMood(existing?.mood ?? '')
-    setHeadache(existing?.headache ?? false)
-    setHeadacheSide(existing?.headacheSide ?? '')
-    setHeadacheSeverity(existing?.headacheSeverity ?? 0)
-    setBloating(existing?.bloating ?? false)
     setNotes(existing?.notes ?? '')
+    setEntries(existing?.entries?.map(e => ({ key: e.key, severity: e.severity, details: e.details || {} })) ?? [])
   }, [symptomDate, symptoms])
 
   async function handleEndCycle(id) {
@@ -77,22 +68,17 @@ function LogEntry() {
     body: JSON.stringify({
       userId: 1,
       date: symptomDate,
-      cramps,
-      fatigue,
       flow,
       mood,
-      headache,
-      headacheSide,
-      headacheSeverity,
-      bloating,
       notes,
+      entries,
     })
   })
   const data = await response.json()
   console.log('saved:', data)
   setSymptoms(prev => [...prev.filter(s => s.id !== data.id), data])
   }
-  
+
   return (
     <div>
       <h1>Log Entry</h1>
@@ -140,35 +126,11 @@ function LogEntry() {
         <option value="heavy">Heavy</option>
       </select>
 
-      <label>Cramps (0-5): </label>
-      <input type="number" value={cramps} onChange={(e) => setCramps(Number(e.target.value))} />
-
-      <label>Fatigue (0-5): </label>
-      <input type="number" value={fatigue} onChange={(e) => setFatigue(Number(e.target.value))} />
-
       <label>Mood: </label>
       <input type="text" value={mood} onChange={(e) => setMood(e.target.value)} />
 
-      <label>Headache: </label>
-      <input type="checkbox" checked={headache} onChange={(e) => setHeadache(e.target.checked)} />
-
-      {headache && (
-        <>
-          <label>Side: </label>
-          <select value={headacheSide} onChange={(e) => setHeadacheSide(e.target.value)}>
-            <option value="">Select</option>
-            <option value="left">Left</option>
-            <option value="right">Right</option>
-            <option value="both">Both</option>
-          </select>
-
-          <label>Severity (0-5): </label>
-          <input type="number" value={headacheSeverity} onChange={(e) => setHeadacheSeverity(Number(e.target.value))} />
-        </>
-      )}
-
-      <label>Bloating: </label>
-      <input type="checkbox" checked={bloating} onChange={(e) => setBloating(e.target.checked)} />
+      <h3>Symptoms</h3>
+      <SymptomChecklist value={entries} onChange={setEntries} />
 
       <label>Notes: </label>
       <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />

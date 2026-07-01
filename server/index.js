@@ -54,30 +54,34 @@ app.put('/api/cycles/:id', async (req, res) => {
 })
 
 app.get('/api/symptoms', async (req, res) => {
-  const symptoms = await prisma.symptomLog.findMany()
+  const symptoms = await prisma.symptomLog.findMany({ include: { entries: true } })
   res.json(symptoms)
 })
 
 app.post('/api/symptoms', async (req, res) => {
-  const { userId, date, cramps, fatigue, flow, mood, headache, headacheSide, headacheSeverity, bloating, notes } = req.body
-  const data = {
-    userId,
-    date: new Date(date),
-    cramps,
-    fatigue,
-    flow,
-    mood,
-    headache,
-    headacheSide,
-    headacheSeverity,
-    bloating,
-    notes,
-  }
-  const symptom = await prisma.symptomLog.upsert({
-    where: { userId_date: { userId, date: new Date(date) } },
-    update: data,
-    create: data,
+  const { userId, date, flow, mood, notes, entries } = req.body
+  const data = { userId, date: new Date(date), flow, mood, notes }
+
+  const symptom = await prisma.$transaction(async (tx) => {
+    const log = await tx.symptomLog.upsert({
+      where: { userId_date: { userId, date: new Date(date) } },
+      update: data,
+      create: data,
+    })
+    await tx.symptomEntry.deleteMany({ where: { symptomLogId: log.id } })
+    if (entries?.length) {
+      await tx.symptomEntry.createMany({
+        data: entries.map(e => ({
+          symptomLogId: log.id,
+          key: e.key,
+          severity: e.severity,
+          details: e.details,
+        })),
+      })
+    }
+    return tx.symptomLog.findUnique({ where: { id: log.id }, include: { entries: true } })
   })
+
   res.json(symptom)
 })
 
