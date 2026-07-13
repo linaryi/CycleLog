@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import SymptomChecklist from '../components/SymptomChecklist'
 import MoodPicker from '../components/MoodPicker'
+import Toast from '../components/Toast'
 import { symptomByKey } from '../symptomCatalog'
 
 function toDateKey(date) {
@@ -18,6 +19,14 @@ function Dashboard() {
   const [notes, setNotes] = useState('')
   const [entries, setEntries] = useState([])
   const [isQuickLogOpen, setIsQuickLogOpen] = useState(false)
+  const [toast, setToast] = useState({ show: false, message: '' })
+  const toastTimer = useRef(null)
+
+  function showToast(message) {
+    clearTimeout(toastTimer.current)
+    setToast({ show: true, message })
+    toastTimer.current = setTimeout(() => setToast(t => ({ ...t, show: false })), 2000)
+  }
 
   useEffect(() => {
     fetch('http://localhost:3000/api/cycles')
@@ -62,20 +71,32 @@ function Dashboard() {
   }, [selectedDate, symptoms])
 
   async function handleSave() {
-    const response = await fetch('http://localhost:3000/api/symptoms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: 1,
-        date: selectedDate,
-        flow,
-        moods,
-        notes,
-        entries,
+    try {
+      const response = await fetch('http://localhost:3000/api/symptoms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: 1,
+          date: selectedDate,
+          flow,
+          moods,
+          notes,
+          entries,
+        })
       })
-    })
-    const data = await response.json()
-    setSymptoms(prev => [...prev.filter(s => s.id !== data.id), data])
+      if (!response.ok) throw new Error(`Server responded ${response.status}`)
+      const data = await response.json()
+      setSymptoms(prev => [...prev.filter(s => s.id !== data.log.id), data.log])
+      if (data.cycle) {
+        setCycles(prev => [...prev, data.cycle])
+        showToast('Saved — cycle started ✓')
+      } else {
+        showToast('Saved ✓')
+      }
+    } catch (err) {
+      console.error('save failed:', err)
+      showToast('Save failed — try again')
+    }
   }
 
   return (
@@ -199,6 +220,8 @@ function Dashboard() {
           </div>
 
       </div>
+
+      <Toast show={toast.show} message={toast.message} />
     </div>
   )
 }
