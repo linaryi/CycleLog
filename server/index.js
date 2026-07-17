@@ -137,28 +137,49 @@ app.post('/api/symptoms', async (req, res) => {
 
   // logging flow starts a cycle automatically — but not if one is active,
   // and not if this log is a backfilled day inside an already-recorded cycle
-  let newCycle = null
+  let cycle = null
+  let cycleStarted = false
   if (flow) {
-    const logDay = utcMidnight(date)
+    const logDay = new Date(utcMidnight(date))
     const overlapping = await prisma.cycle.findFirst({
       where: {
         userId,
-        startDate: { lte: new Date(logDay) },
+        startDate: { lte: logDay },
         OR: [
           { endDate: null },
-          { endDate: { gte: new Date(logDay) } },
+          { endDate: { gte: logDay } },
         ],
       },
     })
-    const activeCycle = await prisma.cycle.findFirst({ where: { userId, endDate: null } })
-    if (!overlapping && !activeCycle) {
-      newCycle = await prisma.cycle.create({
-        data: { userId, startDate: new Date(logDay) },
+    if (!overlapping) {
+      // flow logged up to GAP days before an existing cycle's start belongs to
+      // that same period — pull the cycle's start date back to this log
+      const startsJustAfter = await prisma.cycle.findFirst({
+        where: {
+          userId,
+          startDate: {
+            gt: logDay,
+            lte: new Date(logDay.getTime() + CYCLE_END_GAP_DAYS * MS_PER_DAY),
+          },
+        },
+        orderBy: { startDate: 'asc' },
       })
+      const activeCycle = await prisma.cycle.findFirst({ where: { userId, endDate: null } })
+      if (startsJustAfter) {
+        cycle = await prisma.cycle.update({
+          where: { id: startsJustAfter.id },
+          data: { startDate: logDay },
+        })
+      } else if (!activeCycle) {
+        cycle = await prisma.cycle.create({
+          data: { userId, startDate: logDay },
+        })
+        cycleStarted = true
+      }
     }
   }
 
-  res.json({ log: symptom, cycle: newCycle })
+  res.json({ log: symptom, cycle, cycleStarted })
 })
 
 app.get('/api/medications', async (req, res) => {

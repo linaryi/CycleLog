@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import SymptomChecklist from '../components/SymptomChecklist'
 import MoodPicker from '../components/MoodPicker'
 import Toast from '../components/Toast'
+import DaySummary from '../components/DaySummary'
 
 function LogEntry() {
   const [searchParams] = useSearchParams()
@@ -18,10 +19,14 @@ function LogEntry() {
   const [moods, setMoods] = useState([])
   const [notes, setNotes] = useState('')
   const [entries, setEntries] = useState([])
+  const [justSaved, setJustSaved] = useState(false)
   const [toast, setToast] = useState({ show: false, message: '' })
   const toastTimer = useRef(null)
 
   const activeCycles = cycles.filter(c => !c.endDate)
+  const savedLog = symptoms.find(
+    s => new Date(s.date).toLocaleDateString('en-CA', { timeZone: 'UTC' }) === symptomDate
+  )
 
   function showToast(message) {
     clearTimeout(toastTimer.current)
@@ -51,6 +56,11 @@ function LogEntry() {
     setEntries(existing?.entries?.map(e => ({ key: e.key, severity: e.severity, details: e.details || {} })) ?? [])
   }, [symptomDate, symptoms])
 
+  // picking a different day goes back to the editable form
+  useEffect(() => {
+    setJustSaved(false)
+  }, [symptomDate])
+
   async function handleEndCycle(id) {
     const response = await fetch(`http://localhost:3000/api/cycles/${id}`, {
       method: 'PUT',
@@ -78,9 +88,10 @@ function LogEntry() {
       if (!response.ok) throw new Error(`Server responded ${response.status}`)
       const data = await response.json()
       setSymptoms(prev => [...prev.filter(s => s.id !== data.log.id), data.log])
+      setJustSaved(true)
       if (data.cycle) {
-        setCycles(prev => [...prev, data.cycle])
-        showToast('Saved — cycle started ✓')
+        setCycles(prev => [...prev.filter(c => c.id !== data.cycle.id), data.cycle])
+        showToast(data.cycleStarted ? 'Saved — cycle started ✓' : 'Saved — cycle updated ✓')
       } else {
         showToast('Saved ✓')
       }
@@ -91,7 +102,7 @@ function LogEntry() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4E1EB] p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Log Entry</h1>
 
       <div className="w-full max-w-xl flex flex-col gap-6">
@@ -139,39 +150,65 @@ function LogEntry() {
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Daily Log</h2>
 
-          <div className="mb-4">
-            <label className="block text-xs text-gray-500 mb-1">Date</label>
-            <input type="date" value={symptomDate} onChange={(e) => setSymptomDate(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
-          </div>
+          {justSaved && savedLog ? (
+            <div>
+              <div className="flex flex-col items-center text-center mb-5">
+                <div className="w-12 h-12 rounded-full bg-[#A8D8B9] flex items-center justify-center mb-2">
+                  <svg className="w-6 h-6 text-[#13293E]" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <p className="text-[#13293E] font-medium">
+                  Logged for {new Date(symptomDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </p>
+              </div>
 
-          <div className="mb-4">
-            <label className="block text-xs text-gray-500 mb-1">Flow</label>
-            <select value={flow} onChange={(e) => setFlow(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
-              <option value="">None</option>
-              <option value="light">Light</option>
-              <option value="medium">Medium</option>
-              <option value="heavy">Heavy</option>
-            </select>
-          </div>
+              <DaySummary log={savedLog} />
 
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Mood</h3>
-          <div className="mb-4">
-            <MoodPicker value={moods} onChange={setMoods} />
-          </div>
+              <button
+                onClick={() => setJustSaved(false)}
+                className="w-full mt-5 bg-[#F4E1EB] text-[#13293E] py-2.5 rounded-xl font-medium hover:bg-[#BCB6E2]/50 transition-colors"
+              >
+                Edit
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="mb-4">
+                <label className="block text-xs text-gray-500 mb-1">Date</label>
+                <input type="date" value={symptomDate} onChange={(e) => setSymptomDate(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
+              </div>
 
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Symptoms</h3>
-          <div className="mb-4">
-            <SymptomChecklist value={entries} onChange={setEntries} />
-          </div>
+              <div className="mb-4">
+                <label className="block text-xs text-gray-500 mb-1">Flow</label>
+                <select value={flow} onChange={(e) => setFlow(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
+                  <option value="">None</option>
+                  <option value="light">Light</option>
+                  <option value="medium">Medium</option>
+                  <option value="heavy">Heavy</option>
+                </select>
+              </div>
 
-          <div className="mb-4">
-            <label className="block text-xs text-gray-500 mb-1">Notes</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" rows={2} />
-          </div>
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Mood</h3>
+              <div className="mb-4">
+                <MoodPicker value={moods} onChange={setMoods} />
+              </div>
 
-          <button onClick={handleSubmit} className="w-full bg-[#13293E] text-white py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity">
-            Save Entry
-          </button>
+              <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Symptoms</h3>
+              <div className="mb-4">
+                <SymptomChecklist value={entries} onChange={setEntries} />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-xs text-gray-500 mb-1">Notes</label>
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" rows={2} />
+              </div>
+
+              <button onClick={handleSubmit} className="w-full bg-[#13293E] text-white py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity">
+                Save Entry
+              </button>
+            </>
+          )}
         </div>
 
       </div>

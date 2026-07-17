@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-.cyclelog-calendar {
+/* .cyclelog-calendar alone ties with the library's .react-calendar rule and
+   loses on load order — chaining both classes outranks it on specificity */
+.cyclelog-calendar.react-calendar {
   width: 100%;
   border: none;
   font-family: inherit;
@@ -13,7 +15,7 @@
 
 .cyclelog-calendar .react-calendar__navigation button:enabled:hover,
 .cyclelog-calendar .react-calendar__navigation button:enabled:focus {
-  background-color: #F4E1EB;
+  background-color: #E5E7EB;
   border-radius: 0.75rem;
 }
 
@@ -35,26 +37,33 @@
 
 .cyclelog-calendar .react-calendar__tile {
   border-radius: 0.75rem;
-  padding: 1.1rem 0.5rem;
-  font-size: 0.95rem;
+  aspect-ratio: 1;
+  padding: 0.25rem;
+  font-size: 1.05rem;
   color: #13293E;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .cyclelog-calendar .react-calendar__tile:enabled:hover,
 .cyclelog-calendar .react-calendar__tile:enabled:focus {
-  background-color: #F4E1EB;
+  background-color: #E5E7EB;
 }
 
 .cyclelog-calendar .react-calendar__tile--now {
-  background-color: #F4E1EB;
+  background: none; /* cancel react-calendar's default yellow */
+  outline: 2px solid #13293E;
+  outline-offset: -2px;
 }
 
-.cyclelog-calendar .react-calendar__tile--active {
-  background-color: #13293E;
-  color: white;
-}
-
-.cyclelog-calendar .logged-day {
-  background-color: #BCB6E2;
+/* last so selection wins over other tile fills — including the gray
+   hover/focus rule, which would otherwise win the specificity tie and
+   make a just-clicked (still focused/hovered) day flash gray */
+.cyclelog-calendar .react-calendar__tile--active,
+.cyclelog-calendar .react-calendar__tile--active:enabled:hover,
+.cyclelog-calendar .react-calendar__tile--active:enabled:focus {
+  background-color: #C9EBFB;
   color: #13293E;
 }

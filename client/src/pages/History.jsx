@@ -147,7 +147,7 @@ function History() {
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 
   return (
-    <div className="min-h-screen bg-[#F4E1EB] p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">History</h1>
 
       <div className="w-full max-w-xl flex flex-col gap-4">

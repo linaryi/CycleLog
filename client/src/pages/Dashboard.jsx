@@ -88,8 +88,8 @@ function Dashboard() {
       const data = await response.json()
       setSymptoms(prev => [...prev.filter(s => s.id !== data.log.id), data.log])
       if (data.cycle) {
-        setCycles(prev => [...prev, data.cycle])
-        showToast('Saved — cycle started ✓')
+        setCycles(prev => [...prev.filter(c => c.id !== data.cycle.id), data.cycle])
+        showToast(data.cycleStarted ? 'Saved — cycle started ✓' : 'Saved — cycle updated ✓')
       } else {
         showToast('Saved ✓')
       }
@@ -100,7 +100,7 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4E1EB] p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Dashboard</h1>
 
       <div className={`flex items-start transition-[gap] duration-500 ease-in-out ${isQuickLogOpen ? 'gap-6' : 'gap-0'}`}>

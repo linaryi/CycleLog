@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import ReactCalendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { moodCatalog, moodEmotionByName } from '../moodCatalog'
-import { symptomByKey } from '../symptomCatalog'
+import DaySummary from '../components/DaySummary'
 
 const NEUTRAL_MOOD_COLOR = '#B8B8B8'
 
@@ -55,19 +55,28 @@ function Calendar() {
     setSelectedDay(prev => (prev && dateKey(prev) === dateKey(date) ? null : date))
   }
 
-  function tileClassName({ date }) {
-    if (view !== 'cycle') return
-    if (loggedDates.includes(dateKey(date))) {
-      return 'logged-day'
-    }
-  }
-
+  // Every tile gets a dot row — invisible when there's nothing logged — so day
+  // numbers sit at the same height whether or not the day has data.
   function tileContent({ date }) {
-    if (view !== 'mood') return null
+    if (view === 'cycle') {
+      const logged = loggedDates.includes(dateKey(date))
+      return (
+        <div className="flex justify-center mt-2">
+          <span className={`w-2 h-2 rounded-full inline-block bg-gray-400 ${logged ? '' : 'invisible'}`} />
+        </div>
+      )
+    }
+
     const colors = moodColorsByDate[dateKey(date)]
-    if (!colors?.length) return null
+    if (!colors?.length) {
+      return (
+        <div className="flex justify-center mt-2">
+          <span className="w-2 h-2 rounded-full inline-block invisible" />
+        </div>
+      )
+    }
     return (
-      <div className="flex justify-center gap-0.5 mt-1">
+      <div className="flex justify-center gap-0.5 mt-2">
         {colors.map(color => (
           <span key={color} className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: color }} />
         ))}
@@ -76,16 +85,16 @@ function Calendar() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4E1EB] p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Calendar</h1>
 
       <div className={`flex items-start transition-[gap] duration-500 ease-in-out ${selectedDay ? 'gap-6' : 'gap-0'}`}>
 
         <div className="w-[42rem] flex-shrink-0 bg-white rounded-2xl p-6 shadow-sm">
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-col gap-2 mb-4">
             <button
               onClick={() => setView('cycle')}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+              className={`w-full py-2 rounded-xl text-sm font-medium transition-colors ${
                 view === 'cycle' ? 'bg-[#13293E] text-white' : 'bg-[#F4E1EB] text-[#13293E] hover:bg-[#BCB6E2]/50'
               }`}
             >
@@ -93,7 +102,7 @@ function Calendar() {
             </button>
             <button
               onClick={() => setView('mood')}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
+              className={`w-full py-2 rounded-xl text-sm font-medium transition-colors ${
                 view === 'mood' ? 'bg-[#13293E] text-white' : 'bg-[#F4E1EB] text-[#13293E] hover:bg-[#BCB6E2]/50'
               }`}
             >
@@ -102,7 +111,6 @@ function Calendar() {
           </div>
 
           <ReactCalendar
-            tileClassName={tileClassName}
             tileContent={tileContent}
             onClickDay={handleDayClick}
             className="cyclelog-calendar"
@@ -137,58 +145,7 @@ function Calendar() {
                 </div>
 
                 {selectedLog ? (
-                  <div className="flex flex-col gap-4">
-                    <div>
-                      <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Flow</h3>
-                      <p className="text-sm text-[#13293E] capitalize">{selectedLog.flow || 'None'}</p>
-                    </div>
-
-                    <div>
-                      <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Mood</h3>
-                      {selectedLog.moods?.length ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {selectedLog.moods.map(name => (
-                            <span key={name} className="flex items-center gap-1.5 text-xs bg-[#F4E1EB] text-[#13293E] px-2.5 py-1 rounded-full">
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: moodEmotionByName[name]?.color ?? NEUTRAL_MOOD_COLOR }} />
-                              {name}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-400">Not logged</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Symptoms</h3>
-                      {selectedLog.entries?.length ? (
-                        <div className="flex flex-col gap-1">
-                          {selectedLog.entries.map(e => {
-                            const details = e.details && Object.entries(e.details)
-                              .filter(([, v]) => v && (!Array.isArray(v) || v.length))
-                              .map(([, v]) => (Array.isArray(v) ? v.join(', ') : v))
-                              .join(', ')
-                            return (
-                              <p key={e.id} className="text-sm text-[#13293E]">
-                                {symptomByKey[e.key]?.label ?? e.key}
-                                {e.severity && <span className="text-gray-500"> · {e.severity}</span>}
-                                {details && <span className="text-gray-500"> ({details})</span>}
-                              </p>
-                            )
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-400">None</p>
-                      )}
-                    </div>
-
-                    {selectedLog.notes && (
-                      <div>
-                        <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Notes</h3>
-                        <p className="text-sm text-gray-600">{selectedLog.notes}</p>
-                      </div>
-                    )}
-                  </div>
+                  <DaySummary log={selectedLog} />
                 ) : (
                   <p className="text-gray-400 text-sm mb-2">Nothing logged for this day</p>
                 )}
