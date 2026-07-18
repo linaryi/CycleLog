@@ -4,6 +4,7 @@ import SymptomChecklist from '../components/SymptomChecklist'
 import MoodPicker from '../components/MoodPicker'
 import Toast from '../components/Toast'
 import { symptomByKey } from '../symptomCatalog'
+import { daysSinceLastCycle } from '../stats'
 
 function toDateKey(date) {
   return date.toLocaleDateString('en-CA')
@@ -44,6 +45,7 @@ function Dashboard() {
   const cycleDay = activeCycle
     ? Math.floor((new Date() - new Date(activeCycle.startDate)) / (1000 * 60 * 60 * 24)) + 1
     : null
+  const daysSince = daysSinceLastCycle(cycles)
 
   const lastSymptom = symptoms.sort((a, b) => new Date(b.date) - new Date(a.date))[0]
   const lastSymptomLabels = lastSymptom?.entries?.map(e => symptomByKey[e.key]?.label ?? e.key) ?? []
@@ -112,7 +114,10 @@ function Dashboard() {
               {activeCycle ? (
                 <p className="text-2xl font-semibold text-[#13293E]">Day {cycleDay}</p>
               ) : (
-                <p className="text-gray-400">Not currently tracking</p>
+                <p className="text-gray-400">
+                  Not currently tracking
+                  {daysSince != null && ` — last cycle ended ${daysSince} ${daysSince === 1 ? 'day' : 'days'} ago`}
+                </p>
               )}
             </div>
 
