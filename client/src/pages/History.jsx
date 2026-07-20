@@ -7,7 +7,11 @@ import { moodEmotionByName } from '../moodCatalog'
 import {
   MS_PER_DAY, utcMidnight, cycleStats, daysSinceLastCycle,
   topSymptoms, topMoods, symptomsByCycleDay,
+  logsInRange, cyclesStartedInRange, logsInCycle,
+  monthRange, yearRange, availableMonths, availableYears, perCycleSummary,
 } from '../stats'
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 // chart widths: page column is max-w-4xl (896px). Half-row card = (896 - 16 gap) / 2
 // = 440px; full-row card = 896px. Both minus the card's p-6 padding (48px).
@@ -104,6 +108,8 @@ function History() {
   const [symptoms, setSymptoms] = useState([])
   const [expandedIds, setExpandedIds] = useState(() => new Set())
   const [tab, setTab] = useState('stats')
+  const [scope, setScope] = useState('all')
+  const [scopeValue, setScopeValue] = useState(null)
 
   useEffect(() => {
     fetch('http://localhost:3000/api/cycles')
@@ -131,13 +137,8 @@ function History() {
     .filter(c => c.endDate)
     .sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
 
-  function logsWithin(start, end) {
-    return symptoms
-      .filter(s => {
-        const t = utcMidnight(s.date)
-        return t >= start && t <= end
-      })
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
+  function cycleLogsSorted(cycle) {
+    return logsInCycle(symptoms, cycle).sort((a, b) => new Date(a.date) - new Date(b.date))
   }
 
   // logs that don't belong to any cycle (past or active)
@@ -152,11 +153,43 @@ function History() {
     })
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 
-  const stats = cycleStats(cycles)
+  // ---- statistics scope: filtering = choosing which arrays the stat functions see ----
+  const cyclesNewestFirst = [...cycles].sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+  const months = availableMonths(symptoms)
+  const years = availableYears(symptoms)
+
+  let filteredCycles = cycles
+  let filteredSymptoms = symptoms
+  let selectedCycle = null
+  if (scope === 'cycle' && scopeValue != null) {
+    selectedCycle = cycles.find(c => c.id === Number(scopeValue)) ?? null
+    filteredCycles = selectedCycle ? [selectedCycle] : []
+    filteredSymptoms = selectedCycle ? logsInCycle(symptoms, selectedCycle) : []
+  } else if (scope === 'month' && scopeValue != null) {
+    const [y, m] = String(scopeValue).split('-').map(Number)
+    const [start, end] = monthRange(y, m)
+    filteredCycles = cyclesStartedInRange(cycles, start, end)
+    filteredSymptoms = logsInRange(symptoms, start, end)
+  } else if (scope === 'year' && scopeValue != null) {
+    const [start, end] = yearRange(Number(scopeValue))
+    filteredCycles = cyclesStartedInRange(cycles, start, end)
+    filteredSymptoms = logsInRange(symptoms, start, end)
+  }
+
+  function changeScope(next) {
+    setScope(next)
+    if (next === 'cycle') setScopeValue(cyclesNewestFirst[0]?.id ?? null)
+    else if (next === 'month') setScopeValue(months[0] ? `${months[0].year}-${months[0].month}` : null)
+    else if (next === 'year') setScopeValue(years[0] ?? null)
+    else setScopeValue(null)
+  }
+
+  const stats = cycleStats(filteredCycles)
   const daysSince = daysSinceLastCycle(cycles)
-  const symptomRanking = topSymptoms(symptoms).slice(0, 8)
-  const moodRanking = topMoods(symptoms).slice(0, 8)
-  const byCycleDay = symptomsByCycleDay(cycles, symptoms)
+  const perCycle = selectedCycle ? perCycleSummary(selectedCycle, symptoms) : null
+  const symptomRanking = topSymptoms(filteredSymptoms).slice(0, 8)
+  const moodRanking = topMoods(filteredSymptoms).slice(0, 8)
+  const byCycleDay = symptomsByCycleDay(filteredCycles, filteredSymptoms)
 
   return (
     <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
@@ -183,12 +216,93 @@ function History() {
           </button>
         </div>
 
-        {tab === 'stats' && (
+        {tab === 'stats' && (<>
+
+        <div className="flex gap-2">
+          <select
+            value={scope}
+            onChange={(e) => changeScope(e.target.value)}
+            className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white text-[#13293E]"
+          >
+            <option value="all">All time</option>
+            <option value="cycle">By cycle</option>
+            <option value="month">By month</option>
+            <option value="year">By year</option>
+          </select>
+
+          {scope === 'cycle' && (
+            <select
+              value={scopeValue ?? ''}
+              onChange={(e) => setScopeValue(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white text-[#13293E]"
+            >
+              {cyclesNewestFirst.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.endDate
+                    ? `${formatDate(c.startDate)} – ${formatDate(c.endDate)}`
+                    : `started ${formatDate(c.startDate)} · ongoing`}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {scope === 'month' && (
+            <select
+              value={scopeValue ?? ''}
+              onChange={(e) => setScopeValue(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white text-[#13293E]"
+            >
+              {months.map(({ year, month }) => (
+                <option key={`${year}-${month}`} value={`${year}-${month}`}>
+                  {MONTH_NAMES[month]} {year}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {scope === 'year' && (
+            <select
+              value={scopeValue ?? ''}
+              onChange={(e) => setScopeValue(e.target.value)}
+              className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm bg-white text-[#13293E]"
+            >
+              {years.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         <div className="bg-white rounded-2xl p-6 shadow-sm md:col-span-2">
-          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Cycle Statistics</h2>
-          {stats ? (
+          <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
+            {scope === 'cycle' ? 'Cycle Summary' : 'Cycle Statistics'}
+          </h2>
+          {scope === 'cycle' ? (
+            perCycle ? (
+              <div className="grid grid-cols-4 gap-3 text-center">
+                <div>
+                  <p className="text-2xl font-semibold text-[#13293E]">{perCycle.lengthDays ?? '—'}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{perCycle.lengthDays != null ? 'days long' : 'ongoing'}</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold text-[#13293E]">{perCycle.daysLogged}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">days logged</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold text-[#13293E]">{perCycle.symptomCount}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">symptoms</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold text-[#13293E]">{perCycle.moodCount}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">moods</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">No cycle selected</p>
+            )
+          ) : stats ? (
             <div className="grid grid-cols-4 gap-3 text-center">
               <div>
                 <p className="text-2xl font-semibold text-[#13293E]">{stats.avgLength}</p>
@@ -202,13 +316,20 @@ function History() {
                 <p className="text-2xl font-semibold text-[#13293E]">{stats.maxLength}</p>
                 <p className="text-xs text-gray-500 mt-0.5">longest</p>
               </div>
-              <div>
-                <p className="text-2xl font-semibold text-[#13293E]">{daysSince ?? '—'}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{daysSince != null ? 'days since last' : 'cycle ongoing'}</p>
-              </div>
+              {scope === 'all' ? (
+                <div>
+                  <p className="text-2xl font-semibold text-[#13293E]">{daysSince ?? '—'}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{daysSince != null ? 'days since last' : 'cycle ongoing'}</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-2xl font-semibold text-[#13293E]">{stats.count}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{stats.count === 1 ? 'cycle' : 'cycles'}</p>
+                </div>
+              )}
             </div>
           ) : (
-            <p className="text-sm text-gray-400">No completed cycles yet — stats appear once a cycle ends</p>
+            <p className="text-sm text-gray-400">No completed cycles in this range</p>
           )}
         </div>
 
@@ -265,7 +386,7 @@ function History() {
         </div>
 
         </div>
-        )}
+        </>)}
 
         {tab === 'cycles' && (<>
 
@@ -282,7 +403,7 @@ function History() {
           const start = utcMidnight(cycle.startDate)
           const end = utcMidnight(cycle.endDate)
           const lengthDays = Math.floor((end - start) / MS_PER_DAY) + 1
-          const logs = logsWithin(start, end)
+          const logs = cycleLogsSorted(cycle)
           return (
             <CycleBar
               key={cycle.id}
