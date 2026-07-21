@@ -5,6 +5,9 @@ import MoodPicker from '../components/MoodPicker'
 import Toast from '../components/Toast'
 import { symptomByKey } from '../symptomCatalog'
 import { daysSinceLastCycle } from '../stats'
+import { predictNextCycle, likelihoodByCycleDay } from '../prediction'
+import { apiGet, apiPost, apiPut } from '../api'
+import { useAuth } from '../AuthContext'
 
 function toDateKey(date) {
   return date.toLocaleDateString('en-CA')
@@ -20,6 +23,8 @@ function Dashboard() {
   const [notes, setNotes] = useState('')
   const [entries, setEntries] = useState([])
   const [isQuickLogOpen, setIsQuickLogOpen] = useState(false)
+  const { user, setUser } = useAuth()
+  const [typicalInput, setTypicalInput] = useState('')
   const [toast, setToast] = useState({ show: false, message: '' })
   const toastTimer = useRef(null)
 
@@ -30,22 +35,39 @@ function Dashboard() {
   }
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/cycles')
-      .then(res => res.json())
-      .then(data => setCycles(data))
+    apiGet('/api/cycles').then(setCycles).catch(() => {})
   }, [])
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/symptoms')
-      .then(res => res.json())
-      .then(data => setSymptoms(data))
+    apiGet('/api/symptoms').then(setSymptoms).catch(() => {})
   }, [])
+
+  async function saveTypicalLength() {
+    const days = Number(typicalInput)
+    if (!days || days < 1) {
+      showToast('Enter a number of days first')
+      return
+    }
+    try {
+      const updated = await apiPut('/api/users/me', { typicalCycleLengthDays: days })
+      setUser(updated)
+      showToast('Saved ✓')
+    } catch (err) {
+      console.error('save failed:', err)
+      showToast('Save failed — try again')
+    }
+  }
 
   const activeCycle = cycles.find(c => !c.endDate)
   const cycleDay = activeCycle
     ? Math.floor((new Date() - new Date(activeCycle.startDate)) / (1000 * 60 * 60 * 24)) + 1
     : null
   const daysSince = daysSinceLastCycle(cycles)
+  const prediction = predictNextCycle(cycles, user?.typicalCycleLengthDays)
+  const likelihood = likelihoodByCycleDay(cycles, symptoms)
+  // the one day worth showing on the dashboard: today's cycle day mid-cycle, else Day 1 of the next cycle
+  const relevantDay = activeCycle ? cycleDay : 1
+  const expectedDay = likelihood.find(d => d.day === relevantDay) ?? null
 
   const lastSymptom = symptoms.sort((a, b) => new Date(b.date) - new Date(a.date))[0]
   const lastSymptomLabels = lastSymptom?.entries?.map(e => symptomByKey[e.key]?.label ?? e.key) ?? []
@@ -74,20 +96,13 @@ function Dashboard() {
 
   async function handleSave() {
     try {
-      const response = await fetch('http://localhost:3000/api/symptoms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 1,
-          date: selectedDate,
-          flow,
-          moods,
-          notes,
-          entries,
-        })
+      const data = await apiPost('/api/symptoms', {
+        date: selectedDate,
+        flow,
+        moods,
+        notes,
+        entries,
       })
-      if (!response.ok) throw new Error(`Server responded ${response.status}`)
-      const data = await response.json()
       setSymptoms(prev => [...prev.filter(s => s.id !== data.log.id), data.log])
       if (data.cycle) {
         setCycles(prev => [...prev.filter(c => c.id !== data.cycle.id), data.cycle])
@@ -120,6 +135,77 @@ function Dashboard() {
                 </p>
               )}
             </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Next Cycle</h2>
+              {prediction ? (
+                <div>
+                  <p className="text-2xl font-semibold text-[#13293E]">
+                    {prediction.date.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' })}
+                    <span className="text-base font-medium text-gray-500 ml-2">
+                      {prediction.daysUntil > 0
+                        ? `in ${prediction.daysUntil} ${prediction.daysUntil === 1 ? 'day' : 'days'}`
+                        : prediction.daysUntil === 0
+                          ? 'expected today'
+                          : `${-prediction.daysUntil} ${prediction.daysUntil === -1 ? 'day' : 'days'} past predicted`}
+                    </span>
+                  </p>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {prediction.basis === 'history'
+                      ? `Based on your average ${prediction.intervalDays}-day cycle across ${prediction.cycleCount} cycles`
+                      : `Based on your typical ${prediction.intervalDays}-day cycle`}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-gray-500 text-sm mb-2">
+                    {cycles.length
+                      ? 'Not enough history to predict yet — how many days is your typical cycle (start to start)?'
+                      : 'Log your first cycle to enable predictions. You can set your typical cycle length now:'}
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 28"
+                      value={typicalInput}
+                      onChange={(e) => setTypicalInput(e.target.value)}
+                      className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+                    />
+                    <button
+                      onClick={saveTypicalLength}
+                      className="bg-[#BCB6E2] text-[#13293E] px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {expectedDay && (
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
+                  {activeCycle ? `What to Expect Today (Day ${cycleDay})` : 'What to Expect on Day 1'}
+                </h2>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {expectedDay.symptoms.map(s => (
+                    <span key={s.key} className="text-xs bg-[#F4E1EB] text-[#13293E] px-2.5 py-1 rounded-full">
+                      {s.label}
+                    </span>
+                  ))}
+                  {expectedDay.moods.map(m => (
+                    <span key={m.name} className="flex items-center gap-1.5 text-xs bg-white border border-gray-200 text-gray-600 px-2.5 py-1 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
+                      {m.name}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  From your past cycles — full day-by-day breakdown in History → Statistics
+                </p>
+              </div>
+            )}
 
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Last Logged</h2>

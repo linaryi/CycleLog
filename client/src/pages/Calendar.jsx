@@ -4,6 +4,7 @@ import ReactCalendar from 'react-calendar'
 import 'react-calendar/dist/Calendar.css'
 import { moodCatalog, moodEmotionByName } from '../moodCatalog'
 import DaySummary from '../components/DaySummary'
+import { apiGet } from '../api'
 
 const NEUTRAL_MOOD_COLOR = '#B8B8B8'
 
@@ -28,9 +29,7 @@ function Calendar() {
   const [selectedDay, setSelectedDay] = useState(null)
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/symptoms')
-      .then(res => res.json())
-      .then(data => setSymptoms(data))
+    apiGet('/api/symptoms').then(setSymptoms).catch(() => {})
   }, [])
 
   const loggedDates = symptoms.map(entry => dateKey(new Date(entry.date), true))

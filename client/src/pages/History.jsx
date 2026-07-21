@@ -10,6 +10,8 @@ import {
   logsInRange, cyclesStartedInRange, logsInCycle,
   monthRange, yearRange, availableMonths, availableYears, perCycleSummary,
 } from '../stats'
+import { likelihoodByCycleDay } from '../prediction'
+import { apiGet } from '../api'
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -112,15 +114,11 @@ function History() {
   const [scopeValue, setScopeValue] = useState(null)
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/cycles')
-      .then(res => res.json())
-      .then(data => setCycles(data))
+    apiGet('/api/cycles').then(setCycles).catch(() => {})
   }, [])
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/symptoms')
-      .then(res => res.json())
-      .then(data => setSymptoms(data))
+    apiGet('/api/symptoms').then(setSymptoms).catch(() => {})
   }, [])
 
   function toggle(id) {
@@ -190,6 +188,7 @@ function History() {
   const symptomRanking = topSymptoms(filteredSymptoms).slice(0, 8)
   const moodRanking = topMoods(filteredSymptoms).slice(0, 8)
   const byCycleDay = symptomsByCycleDay(filteredCycles, filteredSymptoms)
+  const likelihood = likelihoodByCycleDay(filteredCycles, filteredSymptoms)
 
   return (
     <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
@@ -277,7 +276,7 @@ function History() {
 
         <div className="bg-white rounded-2xl p-6 shadow-sm md:col-span-2">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
-            {scope === 'cycle' ? 'Cycle Summary' : 'Cycle Statistics'}
+            {scope === 'cycle' ? 'Flow Summary' : 'Flow Statistics'}
           </h2>
           {scope === 'cycle' ? (
             perCycle ? (
@@ -384,6 +383,35 @@ function History() {
             <p className="text-sm text-gray-400">No symptoms logged inside a cycle yet</p>
           )}
         </div>
+
+        {likelihood.length > 0 && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm md:col-span-2">
+            <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">What to Expect by Day</h2>
+            <p className="text-xs text-gray-400 mb-3">
+              How often each symptom and mood showed up on that cycle day ({likelihood[0]?.outOf ?? 0} past {likelihood[0]?.outOf === 1 ? 'cycle' : 'cycles'} in this range)
+            </p>
+            <div className="flex flex-col gap-2">
+              {likelihood.map(({ day, symptoms: daySymptoms, moods: dayMoods }) => (
+                <div key={day} className="flex gap-3 text-sm border-t border-gray-100 pt-2 first:border-t-0 first:pt-0">
+                  <span className="text-gray-400 w-12 flex-shrink-0 font-medium">Day {day}</span>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    {daySymptoms.map(s => (
+                      <span key={s.key} className="text-[#13293E]">
+                        {s.label} <span className="text-gray-400 text-xs">({s.seen}/{s.outOf})</span>
+                      </span>
+                    ))}
+                    {dayMoods.map(m => (
+                      <span key={m.name} className="flex items-center gap-1 text-gray-600">
+                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
+                        {m.name} <span className="text-gray-400 text-xs">({m.seen}/{m.outOf})</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         </div>
         </>)}

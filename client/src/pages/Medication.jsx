@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiGet, apiPost } from '../api'
 
 function Medication() {
   const [medications, setMedications] = useState([])
@@ -7,24 +8,16 @@ function Medication() {
   const [notes, setNotes] = useState('')
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/medications')
-      .then(res => res.json())
-      .then(data => setMedications(data))
+    apiGet('/api/medications').then(setMedications).catch(() => {})
   }, [])
 
   async function handleSubmit() {
-    const response = await fetch('http://localhost:3000/api/medications', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: 1,
-        name,
-        doseMg: Number(doseMg),
-        takenAt: new Date().toLocaleDateString('en-CA'),
-        notes,
-      })
+    const data = await apiPost('/api/medications', {
+      name,
+      doseMg: Number(doseMg),
+      takenAt: new Date().toLocaleDateString('en-CA'),
+      notes,
     })
-    const data = await response.json()
     setMedications([data, ...medications])
     setName('')
     setDoseMg('')

@@ -4,6 +4,7 @@ import SymptomChecklist from '../components/SymptomChecklist'
 import MoodPicker from '../components/MoodPicker'
 import Toast from '../components/Toast'
 import DaySummary from '../components/DaySummary'
+import { apiGet, apiPost, apiPut } from '../api'
 
 function LogEntry() {
   const [searchParams] = useSearchParams()
@@ -35,15 +36,11 @@ function LogEntry() {
   }
 
   useEffect(() => {
-  fetch('http://localhost:3000/api/cycles')
-    .then(res => res.json())
-    .then(data => setCycles(data))
+    apiGet('/api/cycles').then(setCycles).catch(() => {})
   }, [])
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/symptoms')
-      .then(res => res.json())
-      .then(data => setSymptoms(data))
+    apiGet('/api/symptoms').then(setSymptoms).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -62,31 +59,19 @@ function LogEntry() {
   }, [symptomDate])
 
   async function handleEndCycle(id) {
-    const response = await fetch(`http://localhost:3000/api/cycles/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endDate: cycleEndDate }),
-    })
-    const data = await response.json()
+    const data = await apiPut(`/api/cycles/${id}`, { endDate: cycleEndDate })
     setCycles(cycles.map(c => c.id === id ? data : c))
   }
 
   async function handleSubmit() {
     try {
-      const response = await fetch('http://localhost:3000/api/symptoms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 1,
-          date: symptomDate,
-          flow,
-          moods,
-          notes,
-          entries,
-        })
+      const data = await apiPost('/api/symptoms', {
+        date: symptomDate,
+        flow,
+        moods,
+        notes,
+        entries,
       })
-      if (!response.ok) throw new Error(`Server responded ${response.status}`)
-      const data = await response.json()
       setSymptoms(prev => [...prev.filter(s => s.id !== data.log.id), data.log])
       setJustSaved(true)
       if (data.cycle) {
