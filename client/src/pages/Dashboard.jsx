@@ -22,7 +22,6 @@ function Dashboard() {
   const [moods, setMoods] = useState([])
   const [notes, setNotes] = useState('')
   const [entries, setEntries] = useState([])
-  const [isQuickLogOpen, setIsQuickLogOpen] = useState(false)
   const { user, setUser } = useAuth()
   const [typicalInput, setTypicalInput] = useState('')
   const [toast, setToast] = useState({ show: false, message: '' })
@@ -120,7 +119,7 @@ function Dashboard() {
     <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Dashboard</h1>
 
-      <div className={`flex items-start transition-[gap] duration-500 ease-in-out ${isQuickLogOpen ? 'gap-6' : 'gap-0'}`}>
+      <div className="flex items-start gap-6">
 
           <div className="w-[36rem] flex-shrink-0 flex flex-col gap-6">
 
@@ -222,9 +221,10 @@ function Dashboard() {
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">This Week</h2>
+              <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">This Week</h2>
+              <p className="text-xs text-gray-400 mb-3">Pick a day to log it on the right</p>
 
-              <div className="flex justify-between gap-2 mb-4">
+              <div className="flex justify-between gap-2">
                 {days.map(d => {
                   const dateKey = toDateKey(d)
                   const isSelected = dateKey === selectedDate
@@ -249,20 +249,6 @@ function Dashboard() {
                 })}
               </div>
 
-              <button
-                onClick={() => setIsQuickLogOpen(open => !open)}
-                className="w-full flex items-center justify-between bg-[#F4E1EB] text-[#13293E] px-4 py-2.5 rounded-xl font-medium hover:bg-[#BCB6E2]/50 transition-colors"
-              >
-                <span>
-                  Quick Log — {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                </span>
-                <svg
-                  className={`w-4 h-4 transition-transform duration-300 ${isQuickLogOpen ? 'rotate-180' : ''}`}
-                  viewBox="0 0 20 20" fill="currentColor"
-                >
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.293l3.71-4.06a.75.75 0 111.08 1.04l-4.25 4.65a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                </svg>
-              </button>
             </div>
 
             <div className="flex gap-4">
@@ -273,11 +259,12 @@ function Dashboard() {
 
           </div>
 
-          <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isQuickLogOpen ? 'w-[28rem] opacity-100' : 'w-0 opacity-0'}`}>
-            <div className="w-[28rem] bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
-                Quick Log — {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </h2>
+          <div className="w-[28rem] flex-shrink-0">
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">Quick Log</h2>
+              <p className="text-[#13293E] font-medium mb-4">
+                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </p>
 
               <div className="mb-4">
                 <label className="block text-xs text-gray-500 mb-1">Flow</label>
