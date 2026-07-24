@@ -93,26 +93,26 @@ app.get('/health', (req, res) => {
 })
 
 app.post('/api/auth/signup', async (req, res) => {
-  const { email, password } = req.body
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' })
+  const { username, password } = req.body
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' })
   }
-  const existing = await prisma.user.findUnique({ where: { email } })
+  const existing = await prisma.user.findUnique({ where: { username } })
   if (existing) {
-    return res.status(409).json({ error: 'An account with that email already exists' })
+    return res.status(409).json({ error: 'That username is already taken' })
   }
   const hashed = await bcrypt.hash(password, 10)
-  const user = await prisma.user.create({ data: { email, password: hashed } })
+  const user = await prisma.user.create({ data: { username, password: hashed } })
   setAuthCookie(res, user.id)
   res.json(publicUser(user))
 })
 
 app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body
-  const user = await prisma.user.findUnique({ where: { email } })
-  // same generic message whether email or password is wrong — don't reveal which
+  const { username, password } = req.body
+  const user = await prisma.user.findUnique({ where: { username } })
+  // same generic message whether username or password is wrong — don't reveal which
   if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ error: 'Invalid email or password' })
+    return res.status(401).json({ error: 'Invalid username or password' })
   }
   setAuthCookie(res, user.id)
   res.json(publicUser(user))
@@ -287,5 +287,5 @@ app.post('/api/medications', requireAuth, async (req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} — auth enabled`)
+  console.log(`Server running on port ${PORT} (auth enabled)`)
 })

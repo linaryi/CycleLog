@@ -20,7 +20,7 @@ function Navbar() {
       <Link to="/medication" className="text-white hover:text-[#77D4F9] transition-colors">Medication</Link>
       {user && (
         <>
-          <span className="text-white/60 text-sm">{user.email}</span>
+          <span className="text-white/60 text-sm">{user.username}</span>
           <button onClick={handleLogout} className="text-white hover:text-[#77D4F9] transition-colors">
             Log Out
           </button>

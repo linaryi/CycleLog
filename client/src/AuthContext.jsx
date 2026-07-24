@@ -15,12 +15,12 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false))
   }, [])
 
-  async function login(email, password) {
-    setUser(await apiPost('/api/auth/login', { email, password }))
+  async function login(username, password) {
+    setUser(await apiPost('/api/auth/login', { username, password }))
   }
 
-  async function signup(email, password) {
-    setUser(await apiPost('/api/auth/signup', { email, password }))
+  async function signup(username, password) {
+    setUser(await apiPost('/api/auth/signup', { username, password }))
   }
 
   async function logout() {

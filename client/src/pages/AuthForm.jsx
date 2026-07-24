@@ -6,7 +6,7 @@ import { useAuth } from '../AuthContext'
 function AuthForm({ mode }) {
   const { login, signup } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -18,8 +18,8 @@ function AuthForm({ mode }) {
     setError('')
     setSubmitting(true)
     try {
-      if (isLogin) await login(email, password)
-      else await signup(email, password)
+      if (isLogin) await login(username, password)
+      else await signup(username, password)
       navigate('/')
     } catch (err) {
       setError(err.message)
@@ -30,15 +30,15 @@ function AuthForm({ mode }) {
   return (
     <div className="min-h-screen bg-[#FAF1F6] flex flex-col items-center justify-center p-8">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-2">CycleLog</h1>
-      <p className="text-gray-500 mb-8">{isLogin ? 'Welcome back' : 'Create your account'}</p>
+      <p className="text-gray-500 mb-8">{isLogin ? 'Welcome' : 'Create your account'}</p>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-sm flex flex-col gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Email</label>
+          <label className="block text-xs text-gray-500 mb-1">Username</label>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
           />
