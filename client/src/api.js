@@ -1,4 +1,6 @@
-const BASE = 'http://localhost:3000'
+// In production Express serves this app from the same origin as the API, so
+// requests are relative. In dev the API is on a different port.
+const BASE = import.meta.env.PROD ? '' : 'http://localhost:3000'
 
 // One wrapper around fetch so every request:
 //  - sends the httpOnly auth cookie (credentials: 'include' is required per-request)

@@ -1,5 +1,6 @@
 require('dotenv').config()
 
+const path = require('path')
 const express = require('express')
 const cors = require('cors')
 const bcrypt = require('bcryptjs')
@@ -10,14 +11,23 @@ const { PrismaPg } = require('@prisma/adapter-pg')
 const { PrismaClient } = require('@prisma/client')
 
 const app = express()
-const PORT = 3000
+const PORT = process.env.PORT || 3000        // the host assigns the port in production
+const isProduction = process.env.NODE_ENV === 'production'
 const JWT_SECRET = process.env.JWT_SECRET
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
-// httpOnly cookies require an exact origin (not '*') and credentials enabled
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }))
+// production runs behind the host's TLS proxy; without this Express thinks the
+// connection is plain http and refuses to set `secure` cookies
+if (isProduction) app.set('trust proxy', 1)
+
+// In production the API and the frontend share one origin, so CORS isn't needed.
+// In dev they're on different ports, so allow the Vite origin (exact origin, not
+// '*', because credentialed requests forbid wildcards).
+if (!isProduction) {
+  app.use(cors({ origin: 'http://localhost:5173', credentials: true }))
+}
 app.use(express.json())
 app.use(cookieParser())
 
@@ -29,6 +39,7 @@ function setAuthCookie(res, userId) {
   res.cookie('token', token, {
     httpOnly: true,       // JS can't read it → safe from XSS token theft
     sameSite: 'lax',
+    secure: isProduction, // HTTPS-only in production; off locally so http dev works
     maxAge: 7 * 24 * 60 * 60 * 1000,
   })
 }
@@ -119,7 +130,8 @@ app.post('/api/auth/login', async (req, res) => {
 })
 
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('token')
+  // clearing only works if these flags match the ones the cookie was set with
+  res.clearCookie('token', { httpOnly: true, sameSite: 'lax', secure: isProduction })
   res.json({ ok: true })
 })
 
@@ -285,6 +297,18 @@ app.post('/api/medications', requireAuth, async (req, res) => {
   })
   res.json(medication)
 })
+
+// --- serve the built React app (production only) ---
+// Registered AFTER every /api route so it can't shadow them. The regex excludes
+// /api so unknown *page* paths fall back to index.html — React Router runs in the
+// browser, so a hard refresh on /history must still be served the app shell.
+if (isProduction) {
+  const clientDist = path.join(__dirname, '..', 'client', 'dist')
+  app.use(express.static(clientDist))
+  app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'))
+  })
+}
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} (auth enabled)`)
