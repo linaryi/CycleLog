@@ -87,12 +87,12 @@ function LogEntry() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-[#FAF1F6] p-4 sm:p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Log Entry</h1>
 
       <div className="w-full max-w-xl flex flex-col gap-6">
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Current Cycle</h2>
 
           {activeCycles.length > 0 ? (
@@ -132,7 +132,7 @@ function LogEntry() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Daily Log</h2>
 
           {justSaved && savedLog ? (

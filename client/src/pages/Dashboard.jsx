@@ -116,14 +116,14 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-[#FAF1F6] p-4 sm:p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Dashboard</h1>
 
-      <div className="flex items-start gap-6">
+      <div className="w-full max-w-[65.5rem] flex flex-col xl:flex-row items-start gap-6">
 
-          <div className="w-[36rem] flex-shrink-0 flex flex-col gap-6">
+          <div className="w-full xl:w-[36rem] xl:flex-shrink-0 flex flex-col gap-6">
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
               <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Current Cycle</h2>
               {activeCycle ? (
                 <p className="text-2xl font-semibold text-[#13293E]">Day {cycleDay}</p>
@@ -135,7 +135,7 @@ function Dashboard() {
               )}
             </div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
               <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Next Cycle</h2>
               {prediction ? (
                 <div>
@@ -183,7 +183,7 @@ function Dashboard() {
             </div>
 
             {expectedDay && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
                 <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
                   {activeCycle ? `What to Expect Today (Day ${cycleDay})` : 'What to Expect on Day 1'}
                 </h2>
@@ -206,7 +206,7 @@ function Dashboard() {
               </div>
             )}
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
               <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Last Logged</h2>
               {lastSymptom ? (
                 <div>
@@ -220,7 +220,7 @@ function Dashboard() {
               )}
             </div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
               <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">This Week</h2>
               <p className="text-xs text-gray-400 mb-3">Pick a day to log it on the right</p>
 
@@ -259,8 +259,8 @@ function Dashboard() {
 
           </div>
 
-          <div className="w-[28rem] flex-shrink-0">
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+          <div className="w-full xl:w-[28rem] xl:flex-shrink-0">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
               <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">Quick Log</h2>
               <p className="text-[#13293E] font-medium mb-4">
                 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}

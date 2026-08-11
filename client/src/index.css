@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* defensive backstop against residual 1-2px horizontal overflow (e.g. scrollbar
+   width edge cases) — has no effect unless something is already overflowing */
+body {
+  overflow-x: hidden;
+}
+
 /* .cyclelog-calendar alone ties with the library's .react-calendar rule and
    loses on load order — chaining both classes outranks it on specificity */
 .cyclelog-calendar.react-calendar {

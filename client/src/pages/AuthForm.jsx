@@ -28,11 +28,11 @@ function AuthForm({ mode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF1F6] flex flex-col items-center justify-center p-8">
+    <div className="min-h-screen bg-[#FAF1F6] flex flex-col items-center justify-center p-4 sm:p-8">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-2">CycleLog</h1>
       <p className="text-gray-500 mb-8">{isLogin ? 'Welcome' : 'Create your account'}</p>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col gap-4">
         <div>
           <label className="block text-xs text-gray-500 mb-1">Username</label>
           <input

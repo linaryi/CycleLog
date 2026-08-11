@@ -27,12 +27,12 @@ function Medication() {
   const sorted = [...medications].sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))
 
   return (
-    <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-[#FAF1F6] p-4 sm:p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Medication Log</h1>
 
       <div className="w-full max-w-xl flex flex-col gap-6">
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Log a Dose</h2>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -56,7 +56,7 @@ function Medication() {
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">History</h2>
 
           {sorted.length === 0 ? (

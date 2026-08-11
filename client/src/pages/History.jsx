@@ -12,13 +12,16 @@ import {
 } from '../stats'
 import { likelihoodByCycleDay } from '../prediction'
 import { apiGet } from '../api'
+import { useElementWidth } from '../useElementWidth'
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-// chart widths: page column is max-w-4xl (896px). Half-row card = (896 - 16 gap) / 2
-// = 440px; full-row card = 896px. Both minus the card's p-6 padding (48px).
-const CHART_WIDTH = 384
-const CHART_WIDTH_FULL = 848
+// fallback widths used only until each chart's wrapper div is measured on mount
+// (desktop values, matching the page's max-w-4xl layout, so desktop never flashes
+// a different size): half-row card = (896 - 16 gap) / 2 = 440px; full-row card =
+// 896px; both minus the card's p-6 padding (48px).
+const CHART_WIDTH_FALLBACK = 384
+const CHART_WIDTH_FULL_FALLBACK = 848
 
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-US', { timeZone: 'UTC' })
@@ -76,7 +79,7 @@ function CycleBar({ title, subtitle, logs, cycleStart, expanded, onToggle }) {
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-6 py-4 hover:bg-[#F4E1EB]/40 transition-colors"
+        className="w-full flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-[#F4E1EB]/40 transition-colors"
       >
         <div className="text-left">
           <p className="text-[#13293E] font-medium">{title}</p>
@@ -112,6 +115,12 @@ function History() {
   const [tab, setTab] = useState('stats')
   const [scope, setScope] = useState('all')
   const [scopeValue, setScopeValue] = useState(null)
+  const [symptomChartRef, symptomChartWidth] = useElementWidth(CHART_WIDTH_FALLBACK)
+  const [moodChartRef, moodChartWidth] = useElementWidth(CHART_WIDTH_FALLBACK)
+  const [byDayChartRef, byDayChartWidth] = useElementWidth(CHART_WIDTH_FULL_FALLBACK)
+  // the symptom/mood category labels shouldn't eat most of a narrow chart
+  const symptomLabelWidth = Math.min(130, Math.max(70, symptomChartWidth * 0.35))
+  const moodLabelWidth = Math.min(110, Math.max(60, moodChartWidth * 0.3))
 
   useEffect(() => {
     apiGet('/api/cycles').then(setCycles).catch(() => {})
@@ -191,7 +200,7 @@ function History() {
   const likelihood = likelihoodByCycleDay(filteredCycles, filteredSymptoms)
 
   return (
-    <div className="min-h-screen bg-[#FAF1F6] p-8 flex flex-col items-center">
+    <div className="min-h-screen bg-[#FAF1F6] p-4 sm:p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">History</h1>
 
       <div className="w-full max-w-4xl flex flex-col gap-4">
@@ -274,7 +283,7 @@ function History() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm md:col-span-2">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm md:col-span-2">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">
             {scope === 'cycle' ? 'Flow Summary' : 'Flow Statistics'}
           </h2>
@@ -332,28 +341,31 @@ function History() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Most Common Symptoms</h2>
           {symptomRanking.length ? (
-              <BarChart width={CHART_WIDTH} height={symptomRanking.length * 36 + 30} data={symptomRanking} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
+            <div ref={symptomChartRef} className="w-full">
+              <BarChart width={symptomChartWidth} height={symptomRanking.length * 36 + 30} data={symptomRanking} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
                 <CartesianGrid horizontal={false} stroke="#F3F4F6" />
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="label" width={130} tick={{ fontSize: 12, fill: '#374151' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="label" width={symptomLabelWidth} tick={{ fontSize: 12, fill: '#374151' }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => [`${v} ${v === 1 ? 'day' : 'days'}`, 'Logged']} cursor={{ fill: '#F3F4F6' }} />
                 <Bar dataKey="count" fill="#4A88C9" radius={[0, 4, 4, 0]} barSize={14} />
               </BarChart>
+            </div>
           ) : (
             <p className="text-sm text-gray-400">No symptoms logged yet</p>
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Most Common Moods</h2>
           {moodRanking.length ? (
-              <BarChart width={CHART_WIDTH} height={moodRanking.length * 36 + 30} data={moodRanking} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
+            <div ref={moodChartRef} className="w-full">
+              <BarChart width={moodChartWidth} height={moodRanking.length * 36 + 30} data={moodRanking} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
                 <CartesianGrid horizontal={false} stroke="#F3F4F6" />
                 <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12, fill: '#374151' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" width={moodLabelWidth} tick={{ fontSize: 12, fill: '#374151' }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => [`${v} ${v === 1 ? 'day' : 'days'}`, 'Logged']} cursor={{ fill: '#F3F4F6' }} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={14}>
                   {moodRanking.map(m => (
@@ -361,15 +373,17 @@ function History() {
                   ))}
                 </Bar>
               </BarChart>
+            </div>
           ) : (
             <p className="text-sm text-gray-400">No moods logged yet</p>
           )}
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm md:col-span-2">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm md:col-span-2">
           <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-4">Symptoms by Cycle Day</h2>
           {byCycleDay.data.length ? (
-              <BarChart width={CHART_WIDTH_FULL} height={260} data={byCycleDay.data} margin={{ top: 0, right: 8, bottom: 0, left: -24 }}>
+            <div ref={byDayChartRef} className="w-full">
+              <BarChart width={byDayChartWidth} height={260} data={byCycleDay.data} margin={{ top: 0, right: 8, bottom: 0, left: -24 }}>
                 <CartesianGrid vertical={false} stroke="#F3F4F6" />
                 <XAxis dataKey="day" tickFormatter={(d) => `D${d}`} tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
@@ -379,13 +393,14 @@ function History() {
                   <Bar key={s.key} dataKey={s.key} name={s.label} stackId="day" fill={s.color} stroke="#ffffff" strokeWidth={1} barSize={26} />
                 ))}
               </BarChart>
+            </div>
           ) : (
             <p className="text-sm text-gray-400">No symptoms logged inside a cycle yet</p>
           )}
         </div>
 
         {likelihood.length > 0 && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm md:col-span-2">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm md:col-span-2">
             <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">What to Expect by Day</h2>
             <p className="text-xs text-gray-400 mb-3">
               How often each symptom and mood showed up on that cycle day ({likelihood[0]?.outOf ?? 0} past {likelihood[0]?.outOf === 1 ? 'cycle' : 'cycles'} in this range)
@@ -419,7 +434,7 @@ function History() {
         {tab === 'cycles' && (<>
 
         {activeCycle && (
-          <div className="bg-white/60 rounded-2xl shadow-sm px-6 py-4 border border-dashed border-[#BCB6E2]">
+          <div className="bg-white/60 rounded-2xl shadow-sm px-4 sm:px-6 py-4 border border-dashed border-[#BCB6E2]">
             <p className="text-[#13293E] font-medium">
               {formatDate(activeCycle.startDate)} — not ended yet
             </p>
@@ -457,7 +472,7 @@ function History() {
         )}
 
         {!activeCycle && pastCycles.length === 0 && orphanLogs.length === 0 && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm text-gray-400 text-center">
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm text-gray-400 text-center">
             No cycles or entries logged yet
           </div>
         )}
