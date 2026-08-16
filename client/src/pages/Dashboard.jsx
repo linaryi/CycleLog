@@ -119,9 +119,9 @@ function Dashboard() {
     <div className="min-h-screen bg-[#FAF1F6] p-4 sm:p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Dashboard</h1>
 
-      <div className="w-full max-w-[65.5rem] flex flex-col xl:flex-row items-start gap-6">
+      <div className="w-full max-w-[65.5rem] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_28rem] items-start gap-6">
 
-          <div className="w-full xl:w-[36rem] xl:flex-shrink-0 flex flex-col gap-6">
+          <div className="flex flex-col gap-6 min-w-0">
 
             <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
               <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Current Cycle</h2>
@@ -136,18 +136,24 @@ function Dashboard() {
             </div>
 
             <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
-              <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Next Cycle</h2>
+              <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">
+                {activeCycle ? 'Next Cycle After This One' : 'Next Cycle'}
+              </h2>
               {prediction ? (
                 <div>
                   <p className="text-2xl font-semibold text-[#13293E]">
                     {prediction.date.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' })}
-                    <span className="text-base font-medium text-gray-500 ml-2">
-                      {prediction.daysUntil > 0
-                        ? `in ${prediction.daysUntil} ${prediction.daysUntil === 1 ? 'day' : 'days'}`
-                        : prediction.daysUntil === 0
-                          ? 'expected today'
-                          : `${-prediction.daysUntil} ${prediction.daysUntil === -1 ? 'day' : 'days'} past predicted`}
-                    </span>
+                    {/* the "in N days / N days past predicted" framing assumes you're
+                        waiting for a cycle to start — doesn't apply while one is active */}
+                    {!activeCycle && (
+                      <span className="text-base font-medium text-gray-500 ml-2">
+                        {prediction.daysUntil > 0
+                          ? `in ${prediction.daysUntil} ${prediction.daysUntil === 1 ? 'day' : 'days'}`
+                          : prediction.daysUntil === 0
+                            ? 'expected today'
+                            : `${-prediction.daysUntil} ${prediction.daysUntil === -1 ? 'day' : 'days'} past predicted`}
+                      </span>
+                    )}
                   </p>
                   <p className="text-gray-500 text-sm mt-1">
                     {prediction.basis === 'history'
@@ -259,7 +265,7 @@ function Dashboard() {
 
           </div>
 
-          <div className="w-full xl:w-[28rem] xl:flex-shrink-0">
+          <div className="w-full min-w-0">
             <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
               <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">Quick Log</h2>
               <p className="text-[#13293E] font-medium mb-4">

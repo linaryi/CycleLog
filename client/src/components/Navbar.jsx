@@ -24,10 +24,10 @@ function Navbar() {
   return (
     <nav className="bg-[#13293E] px-4 sm:px-8 py-4 relative">
       <div className="flex items-center gap-8">
-        <span className="text-white font-semibold text-lg mr-auto">CycleLog</span>
+        <Link to="/" className="text-white font-semibold text-lg mr-auto hover:text-[#77D4F9] transition-colors">CycleLog</Link>
 
-        {/* desktop: full link row, unchanged from before */}
-        <div className="hidden xl:flex items-center gap-8">
+        {/* full link row: shown from lg (1024px) up, so iPad landscape gets it too */}
+        <div className="hidden lg:flex items-center gap-8">
           {LINKS.map(({ to, label }) => (
             <Link key={to} to={to} className="text-white hover:text-[#77D4F9] transition-colors">
               {label}
@@ -46,7 +46,7 @@ function Navbar() {
         {/* mobile/tablet: hamburger toggle */}
         <button
           onClick={() => setMenuOpen(open => !open)}
-          className="xl:hidden text-white p-1"
+          className="lg:hidden text-white p-1"
           aria-label={menuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={menuOpen}
         >
@@ -62,7 +62,7 @@ function Navbar() {
 
       {/* mobile/tablet dropdown */}
       {menuOpen && (
-        <div className="xl:hidden absolute top-full left-0 right-0 bg-[#13293E] px-4 sm:px-8 pb-4 flex flex-col gap-3 shadow-lg z-10">
+        <div className="lg:hidden absolute top-full left-0 right-0 bg-[#13293E] px-4 sm:px-8 pb-4 flex flex-col gap-3 shadow-lg z-10">
           {LINKS.map(({ to, label }) => (
             <Link
               key={to}

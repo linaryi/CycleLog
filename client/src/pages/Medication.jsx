@@ -6,6 +6,7 @@ function Medication() {
   const [name, setName] = useState('')
   const [doseMg, setDoseMg] = useState('')
   const [notes, setNotes] = useState('')
+  const [takenAt, setTakenAt] = useState(new Date().toLocaleDateString('en-CA'))
 
   useEffect(() => {
     apiGet('/api/medications').then(setMedications).catch(() => {})
@@ -15,13 +16,14 @@ function Medication() {
     const data = await apiPost('/api/medications', {
       name,
       doseMg: Number(doseMg),
-      takenAt: new Date().toLocaleDateString('en-CA'),
+      takenAt,
       notes,
     })
     setMedications([data, ...medications])
     setName('')
     setDoseMg('')
     setNotes('')
+    setTakenAt(new Date().toLocaleDateString('en-CA'))
   }
 
   const sorted = [...medications].sort((a, b) => new Date(b.takenAt) - new Date(a.takenAt))
@@ -43,6 +45,10 @@ function Medication() {
             <div>
               <label className="block text-xs text-gray-500 mb-1">Dose (mg)</label>
               <input type="number" value={doseMg} onChange={(e) => setDoseMg(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Date taken</label>
+              <input type="date" value={takenAt} onChange={(e) => setTakenAt(e.target.value)} className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm" />
             </div>
           </div>
 
@@ -67,7 +73,7 @@ function Medication() {
                 <div key={entry.id} className="border border-gray-200 rounded-xl px-4 py-3">
                   <div className="flex items-center justify-between">
                     <p className="text-[#13293E] font-medium">{entry.name}{entry.doseMg ? ` — ${entry.doseMg}mg` : ''}</p>
-                    <p className="text-xs text-gray-500">{new Date(entry.takenAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-500">{new Date(entry.takenAt).toLocaleDateString('en-US', { timeZone: 'UTC' })}</p>
                   </div>
                   {entry.notes && <p className="text-sm text-gray-500 mt-1">{entry.notes}</p>}
                 </div>

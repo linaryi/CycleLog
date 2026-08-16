@@ -87,9 +87,9 @@ function Calendar() {
     <div className="min-h-screen bg-[#FAF1F6] p-4 sm:p-8 flex flex-col items-center">
       <h1 className="text-3xl font-semibold text-[#13293E] mb-8">Calendar</h1>
 
-      <div className={`w-full max-w-[65.5rem] flex flex-col xl:flex-row items-start transition-[gap] duration-500 ease-in-out gap-6 ${!selectedDay ? 'xl:gap-0' : ''}`}>
+      <div className="w-full max-w-[65.5rem] flex flex-col lg:flex-row items-start">
 
-        <div className="w-full xl:w-[42rem] xl:flex-shrink-0 bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+        <div className="w-full lg:w-[38rem] lg:flex-shrink-0 xl:w-[42rem] bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col gap-2 mb-4">
             <button
               onClick={() => setView('cycle')}
@@ -131,11 +131,11 @@ function Calendar() {
         </div>
 
         <div
-          className={`overflow-hidden transition-all duration-500 ease-in-out w-full ${
-            selectedDay ? 'block xl:opacity-100' : 'hidden xl:block xl:opacity-0'
-          } ${selectedDay ? 'xl:w-[22rem]' : 'xl:w-0'}`}
+          className={`overflow-hidden transition-all duration-500 ease-in-out w-full mt-6 lg:mt-0 ${
+            selectedDay ? 'block lg:opacity-100' : 'hidden lg:block lg:opacity-0'
+          } ${selectedDay ? 'lg:w-[20rem] xl:w-[22rem] lg:ml-6' : 'lg:w-0 xl:w-0 lg:ml-0'}`}
         >
-          <div className="w-full xl:w-[22rem] bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+          <div className="w-full lg:w-[20rem] xl:w-[22rem] bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
             {selectedDay && (
               <>
                 <div className="flex items-center justify-between mb-4">
